@@ -42,7 +42,7 @@ readSettingsFrom filename = liftM (\conf -> (conf, GetSetting $ readSetting conf
 readSettingsFromDefaults :: FilePath -> Conf -> IO (Conf, GetSetting)
 readSettingsFromDefaults filename defaults = do
 	(conf, get) <- readSettingsFrom filename
-	return (M.union defaults conf, get)
+	return (M.union conf defaults, get)
 
 saveSettings :: Conf -> IO ()
 saveSettings conf = getConfigFileName >>= \fname -> writeConfigFile fname conf
