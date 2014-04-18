@@ -7,8 +7,6 @@ module Data.AppSettings (
 	setting,
 	getDefaultConfig,
 	FileLocation(..),
-	ReadOptions(..),
-	defaultReadOptions,
 	readSettings,
 	saveSettings,
 	getSetting',
@@ -46,17 +44,11 @@ getPathForLocation location = case location of
 	AutoFromAppName appName -> getConfigFileName appName
 	Path path -> return path
 
-data ReadOptions = ReadOptions
-	{
-		defaults :: Conf
-	}
-defaultReadOptions = ReadOptions { defaults = M.empty }
-
-readSettings :: ReadOptions -> FileLocation -> IO (Conf, GetSetting)
-readSettings options location = do
+readSettings :: Conf -> FileLocation -> IO (Conf, GetSetting)
+readSettings defaults location = do
 	filePath <- getPathForLocation location
 	(conf, get) <- liftM addGetSetting $ readConfigFile filePath
-	let fullConf = M.union conf $ defaults options
+	let fullConf = M.union conf defaults
 	return (fullConf, get)
 	where
 		addGetSetting conf = (conf, GetSetting $ getSetting' conf)
