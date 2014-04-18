@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 module Data.Serialization (Conf, SettingInfo(..), readConfigFile, writeConfigFile) where
 
@@ -7,18 +8,23 @@ import qualified Data.Map as M
 import Text.ParserCombinators.Parsec
 import Text.Parsec.Text as T
 import Control.Monad (unless)
+import Control.Exception (throwIO, Exception)
+import Data.Typeable (Typeable)
 
 data SettingInfo = SettingInfo { value :: String, userSet :: Bool } deriving (Show, Eq)
 
 type Conf = M.Map String SettingInfo
 
--- TODO let the caller know if the file is invalid
+data ParseException = ParseException FilePath String
+	deriving (Show, Typeable)
+instance Exception ParseException
+
 readConfigFile :: FilePath -> IO Conf
 readConfigFile path = do
 	contents <- T.readFile path
-	return $ case parse parseConfigFile "" contents of
-		Left _ -> M.fromList []
-		Right v -> v
+	case parse parseConfigFile "" contents of
+		Left _ -> throwIO $ ParseException path "Invalid configuration file"
+		Right v -> return v
 
 data ConfigElement = ConfigEntry String String
 	| Comment
@@ -43,11 +49,11 @@ parseComment = do
 
 parseConfigEntry :: T.GenParser st ConfigElement
 parseConfigEntry = do
-	key <- many $ noneOf "="
+	key <- many $ noneOf "=\r\n"
 	char '='
-	value <- many $ noneOf "\r\n"
+	val <- many $ noneOf "\r\n"
 	many $ oneOf "\r\n"
-	return $ ConfigEntry key value
+	return $ ConfigEntry key val
 
 writeConfigFile :: FilePath -> Conf -> IO ()
 writeConfigFile path config = withFile path WriteMode $ \handle -> do

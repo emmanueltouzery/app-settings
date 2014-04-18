@@ -12,18 +12,18 @@ module Data.AppSettings (
 	getSetting',
 	setSetting) where
 
-import Data.Maybe (fromMaybe)
 import System.Directory
-import Control.Monad (liftM)
 import qualified Data.Map as M
-import Control.Monad
 import Control.Monad.State
-import Control.Applicative
 
 import Data.Serialization
 
 -- http://stackoverflow.com/questions/23117205/
 newtype GetSetting = GetSetting (forall a. Read a => Setting a -> a)
+
+-- for the tests...
+instance Show GetSetting where
+	show _ = "GetSetting"
 
 data Setting a = Setting { name :: String, defaultValue :: a }
 
@@ -47,11 +47,8 @@ getPathForLocation location = case location of
 readSettings :: Conf -> FileLocation -> IO (Conf, GetSetting)
 readSettings defaults location = do
 	filePath <- getPathForLocation location
-	(conf, get) <- liftM addGetSetting $ readConfigFile filePath
-	let fullConf = M.union conf defaults
-	return (fullConf, get)
-	where
-		addGetSetting conf = (conf, GetSetting $ getSetting' conf)
+	conf <- readConfigFile filePath
+	return (M.union conf defaults, GetSetting $ getSetting' conf)
 
 saveSettings :: FileLocation -> Conf -> IO ()
 saveSettings location conf = do

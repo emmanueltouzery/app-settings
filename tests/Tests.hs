@@ -1,8 +1,12 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+
 import Data.AppSettings
 
 import Test.Hspec
+import Test.HUnit (assertBool)
 
 import System.Directory (removeFile)
+import Control.Exception (try, SomeException)
 
 textSizeFromWidth :: Setting Double
 textSizeFromWidth = Setting "textSizeFromWidth" 0.04
@@ -25,41 +29,56 @@ main = hspec $ do
 		testEmptyFileDefaults
 		testPartialFileDefaults
 		testFileWithComments
---		testInvalidFile
+		testInvalidFile
 	describe "save config" $ do
-		testUserSetAndDefaults
+		testSaveUserSetAndDefaults
 	-- readSetting for which i have no value
 
 testEmptyFileDefaults :: Spec
 testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
-	readSettings getDefaultSettings (Path "tests/empty.config") >>= \(_, GetSetting getSetting) -> do
-		getSetting textSizeFromWidth `shouldBe` 0.04
-		getSetting textSizeFromHeight `shouldBe` 12.4
-		getSetting textFill `shouldBe` (1,1,0,1)
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/empty.config")
+	case readResult of
+		Right (_, GetSetting getSetting) -> do
+			getSetting textSizeFromWidth `shouldBe` 0.04
+			getSetting textSizeFromHeight `shouldBe` 12.4
+			getSetting textFill `shouldBe` (1,1,0,1)
+		Left (x :: SomeException) -> assertBool (show x) False
 
 testPartialFileDefaults :: Spec
 testPartialFileDefaults = it "parses correctly a partial file with defaults" $ do
-	readSettings getDefaultSettings (Path "tests/partial.config") >>= \(_, GetSetting getSetting) -> do
-		getSetting textSizeFromWidth `shouldBe` 1.02
-		getSetting textSizeFromHeight `shouldBe` 12.4
-		getSetting textFill `shouldBe` (1,2,3,4)
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/partial.config")
+	case readResult of
+		Right (_, GetSetting getSetting) -> do
+			getSetting textSizeFromWidth `shouldBe` 1.02
+			getSetting textSizeFromHeight `shouldBe` 12.4
+			getSetting textFill `shouldBe` (1,2,3,4)
+		Left (x :: SomeException) -> assertBool (show x) False
 
 testFileWithComments :: Spec
 testFileWithComments = it "parses correctly a partial file with comments" $ do
-	readSettings getDefaultSettings (Path "tests/test-save.txt") >>= \(_, GetSetting getSetting) -> do
-		getSetting textSizeFromWidth `shouldBe` 1.02
-		getSetting textSizeFromHeight `shouldBe` 12.4
-		getSetting textFill `shouldBe` (1,2,3,4)
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/test-save.txt")
+	case readResult of
+		Right (_, GetSetting getSetting) -> do
+			getSetting textSizeFromWidth `shouldBe` 1.02
+			getSetting textSizeFromHeight `shouldBe` 12.4
+			getSetting textFill `shouldBe` (1,2,3,4)
+		Left (x :: SomeException) -> assertBool (show x) False
 
---testInvalidFile :: Spec
---testInvalidFile = it "reports errors properly for invalid files" $ do
---	readSettings getDefaultSettings (Path "tests/broken.config") >>= \(_, GetSetting getSetting) -> do
+testInvalidFile :: Spec
+testInvalidFile = it "reports errors properly for invalid files" $ do
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/broken.config")
+	case readResult of
+		Left (x:: SomeException) -> assertBool "ok" True
+		Right _ -> assertBool "did not get an error!" False
 
-testUserSetAndDefaults :: Spec
-testUserSetAndDefaults = it "saves a file with user-set and default settings" $ do
-	readSettings getDefaultSettings (Path "tests/partial.config") >>= \(conf, _) -> do
-		saveSettings (Path "test.txt") conf
-		actual <- readFile "test.txt"
-		reference <- readFile "tests/test-save.txt"
-		actual `shouldBe` reference
-		removeFile "test.txt"
+testSaveUserSetAndDefaults :: Spec
+testSaveUserSetAndDefaults = it "saves a file with user-set and default settings" $ do
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/partial.config") 
+	case readResult of 
+		Right (conf, _) -> do
+			saveSettings (Path "test.txt") conf
+			actual <- readFile "test.txt"
+			reference <- readFile "tests/test-save.txt"
+			actual `shouldBe` reference
+			removeFile "test.txt"
+		Left (x :: SomeException) -> assertBool (show x) False
