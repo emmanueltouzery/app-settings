@@ -6,13 +6,12 @@ module Data.AppSettings (
 	GetSetting(..),
 	setting,
 	getDefaultConfig,
+	FileLocation(..),
 	ReadOptions(..),
 	defaultReadOptions,
 	readSettings,
-	SaveOptions(..),
-	defaultSaveOptions,
 	saveSettings,
-	getSetting,
+	getSetting',
 	setSetting) where
 
 import Data.Maybe (fromMaybe)
@@ -39,46 +38,46 @@ getDefaultConfig :: State Conf () -> Conf
 getDefaultConfig actions = do
 	execState actions M.empty
 
+data FileLocation = AutoFromAppName String
+	| Path FilePath
+
+getPathForLocation :: FileLocation -> IO FilePath
+getPathForLocation location = case location of
+	AutoFromAppName appName -> getConfigFileName appName
+	Path path -> return path
+
 data ReadOptions = ReadOptions
 	{
-		srcFilename :: Maybe FilePath,
 		defaults :: Conf
 	}
-defaultReadOptions = ReadOptions { srcFilename = Nothing, defaults = M.empty }
+defaultReadOptions = ReadOptions { defaults = M.empty }
 
-readSettings :: ReadOptions -> IO (Conf, GetSetting)
-readSettings options = do
-	fname <- fromMaybe <$> getConfigFileName <*> (return $ srcFilename options)
-	(conf, get) <- liftM addGetSetting $ readConfigFile fname
+readSettings :: ReadOptions -> FileLocation -> IO (Conf, GetSetting)
+readSettings options location = do
+	filePath <- getPathForLocation location
+	(conf, get) <- liftM addGetSetting $ readConfigFile filePath
 	let fullConf = M.union conf $ defaults options
 	return (fullConf, get)
 	where
-		addGetSetting conf = (conf, GetSetting $ getSetting conf)
+		addGetSetting conf = (conf, GetSetting $ getSetting' conf)
 
-data SaveOptions = SaveOptions
-	{
-		targetFilename :: Maybe FilePath
-	}
-defaultSaveOptions = SaveOptions { targetFilename = Nothing }
+saveSettings :: FileLocation -> Conf -> IO ()
+saveSettings location conf = do
+	filePath <- getPathForLocation location
+	writeConfigFile filePath conf
 
-saveSettings :: SaveOptions -> Conf -> IO ()
-saveSettings options conf = do
-	fname <- fromMaybe <$> getConfigFileName <*> (return $ targetFilename options)
-	writeConfigFile fname conf
-
-getSetting :: (Read a) => Conf -> Setting a -> a
-getSetting conf (Setting key defaultV) = maybe defaultV (read . value) (M.lookup key conf)
+getSetting' :: (Read a) => Conf -> Setting a -> a
+getSetting' conf (Setting key defaultV) = maybe defaultV (read . value) (M.lookup key conf)
 
 setSetting :: (Show a) => Conf -> Setting a -> a -> Conf
 setSetting conf (Setting key _) v = M.insert key (SettingInfo { value = show v, userSet=True }) conf
 
--- TODO take the app name as parameter
-getSettingsFolder :: IO FilePath
-getSettingsFolder = do
+getSettingsFolder :: String -> IO FilePath
+getSettingsFolder appName = do
 	home <- getHomeDirectory
-	let result = home ++ "/.picdate/"
+	let result = home ++ "/." ++ appName ++ "/"
 	createDirectoryIfMissing False result
 	return result
 
-getConfigFileName :: IO String
-getConfigFileName = fmap (++"config.ini") getSettingsFolder
+getConfigFileName :: String -> IO String
+getConfigFileName appName = fmap (++"config.ini") $ getSettingsFolder appName
