@@ -6,15 +6,12 @@ module Data.AppSettings (
 	GetSetting(..),
 	setting,
 	getDefaultConfig,
-	-- TODO merge all the readSettings* using a data
-	-- with a default value as parameter.
-	-- Same with saveSettings.
+	ReadOptions(..),
+	defaultReadOptions,
 	readSettings,
-	readSettingsDefaults,
-	readSettingsFrom,
-	readSettingsFromDefaults,
+	SaveOptions(..),
+	defaultSaveOptions,
 	saveSettings,
-	saveSettingsTo,
 	getSetting,
 	setSetting) where
 
@@ -24,6 +21,7 @@ import Control.Monad (liftM)
 import qualified Data.Map as M
 import Control.Monad
 import Control.Monad.State
+import Control.Applicative
 
 import Data.Serialization
 
@@ -41,29 +39,32 @@ getDefaultConfig :: State Conf () -> Conf
 getDefaultConfig actions = do
 	execState actions M.empty
 
-readSettings :: IO (Conf, GetSetting)
-readSettings = getConfigFileName >>= readSettingsFrom
+data ReadOptions = ReadOptions
+	{
+		srcFilename :: Maybe FilePath,
+		defaults :: Conf
+	}
+defaultReadOptions = ReadOptions { srcFilename = Nothing, defaults = M.empty }
 
-readSettingsDefaults :: Conf -> IO (Conf, GetSetting)
-readSettingsDefaults defaults = do
-	fname <- getConfigFileName
-	readSettingsFromDefaults fname defaults
-
-readSettingsFrom :: FilePath -> IO (Conf, GetSetting)
-readSettingsFrom filename = liftM addGetSetting $ readConfigFile filename
+readSettings :: ReadOptions -> IO (Conf, GetSetting)
+readSettings options = do
+	fname <- fromMaybe <$> getConfigFileName <*> (return $ srcFilename options)
+	(conf, get) <- liftM addGetSetting $ readConfigFile fname
+	let fullConf = M.union conf $ defaults options
+	return (fullConf, get)
 	where
 		addGetSetting conf = (conf, GetSetting $ getSetting conf)
 
-readSettingsFromDefaults :: FilePath -> Conf -> IO (Conf, GetSetting)
-readSettingsFromDefaults filename defaults = do
-	(conf, get) <- readSettingsFrom filename
-	return (M.union conf defaults, get)
+data SaveOptions = SaveOptions
+	{
+		targetFilename :: Maybe FilePath
+	}
+defaultSaveOptions = SaveOptions { targetFilename = Nothing }
 
-saveSettings :: Conf -> IO ()
-saveSettings conf = getConfigFileName >>= \fname -> saveSettingsTo fname conf
-
-saveSettingsTo :: FilePath -> Conf -> IO ()
-saveSettingsTo filename conf = writeConfigFile filename conf
+saveSettings :: SaveOptions -> Conf -> IO ()
+saveSettings options conf = do
+	fname <- fromMaybe <$> getConfigFileName <*> (return $ targetFilename options)
+	writeConfigFile fname conf
 
 getSetting :: (Read a) => Conf -> Setting a -> a
 getSetting conf (Setting key defaultV) = maybe defaultV (read . value) (M.lookup key conf)

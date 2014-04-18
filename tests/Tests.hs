@@ -33,34 +33,56 @@ main = hspec $ do
 
 testEmptyFile :: Spec
 testEmptyFile = it "parses correctly an empty file" $ do
-	readSettingsFrom "tests/empty.config" >>= \(conf, _) -> conf `shouldBe`
+	let readOptions = defaultReadOptions { srcFilename = Just "tests/empty.config" }
+	readSettings readOptions >>= \(conf, _) -> conf `shouldBe`
 		M.fromList []
 
 testEmptyFileDefaults :: Spec
 testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
-	readSettingsFromDefaults "tests/empty.config" getDefaultSettings >>= \(_, GetSetting getSetting) -> do
+	let readOptions = defaultReadOptions
+		{
+			srcFilename = Just "tests/empty.config",
+			defaults = getDefaultSettings
+		}
+	readSettings readOptions >>= \(_, GetSetting getSetting) -> do
 		getSetting textSizeFromWidth `shouldBe` 0.04
 		getSetting textSizeFromHeight `shouldBe` 12.4
 		getSetting textFill `shouldBe` (1,1,0,1)
 
 testPartialFileDefaults :: Spec
 testPartialFileDefaults = it "parses correctly a partial file with defaults" $ do
-	readSettingsFromDefaults "tests/partial.config" getDefaultSettings >>= \(_, GetSetting getSetting) -> do
+	let readOptions = defaultReadOptions
+		{
+			srcFilename = Just "tests/partial.config",
+			defaults = getDefaultSettings
+		}
+	readSettings readOptions >>= \(_, GetSetting getSetting) -> do
 		getSetting textSizeFromWidth `shouldBe` 1.02
 		getSetting textSizeFromHeight `shouldBe` 12.4
 		getSetting textFill `shouldBe` (1,2,3,4)
 
 testFileWithComments :: Spec
 testFileWithComments = it "parses correctly a partial file with comments" $ do
-	readSettingsFromDefaults "tests/test-save.txt" getDefaultSettings >>= \(_, GetSetting getSetting) -> do
+	let readOptions = defaultReadOptions
+		{
+			srcFilename = Just "tests/test-save.txt",
+			defaults = getDefaultSettings
+		}
+	readSettings readOptions >>= \(_, GetSetting getSetting) -> do
 		getSetting textSizeFromWidth `shouldBe` 1.02
 		getSetting textSizeFromHeight `shouldBe` 12.4
 		getSetting textFill `shouldBe` (1,2,3,4)
 
 testUserSetAndDefaults :: Spec
 testUserSetAndDefaults = it "saves a file with user-set and default settings" $ do
-	readSettingsFromDefaults "tests/partial.config" getDefaultSettings >>= \(conf, _) -> do
-		saveSettingsTo "test.txt" conf
+	let readOptions = defaultReadOptions
+		{
+			srcFilename = Just "tests/partial.config",
+			defaults = getDefaultSettings
+		}
+	readSettings readOptions >>= \(conf, _) -> do
+		let saveOptions = defaultSaveOptions { targetFilename = Just "test.txt" }
+		saveSettings saveOptions conf
 		actual <- readFile "test.txt"
 		reference <- readFile "tests/test-save.txt"
 		actual `shouldBe` reference
