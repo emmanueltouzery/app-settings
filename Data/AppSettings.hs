@@ -10,7 +10,6 @@ module Data.AppSettings (
 	FileLocation(..),
 	readSettings,
 	saveSettings,
-	getSetting',
 	setSetting) where
 
 import System.Directory
