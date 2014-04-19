@@ -5,7 +5,7 @@ import Data.AppSettings
 import Test.Hspec
 import Test.HUnit (assertBool)
 
-import System.Directory (removeFile)
+import System.Directory (removeFile, copyFile, doesFileExist)
 import Control.Exception (try, SomeException)
 
 textSizeFromWidth :: Setting Double
@@ -33,7 +33,7 @@ main = hspec $ do
 		testInvalidValue
 	describe "save config" $ do
 		testSaveUserSetAndDefaults
-	-- readSetting for which i have no value
+		createBakBeforeSaving
 
 testEmptyFileDefaults :: Spec
 testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
@@ -80,7 +80,7 @@ testInvalidFile :: Spec
 testInvalidFile = it "reports errors properly for invalid files" $ do
 	readResult <- try $ readSettings (Path "tests/broken.config")
 	case readResult of
-		Left (x:: SomeException) -> assertBool "ok" True
+		Left (_ :: SomeException) -> assertBool "ok" True
 		Right _ -> assertBool "did not get an error!" False
 
 testSaveUserSetAndDefaults :: Spec
@@ -94,3 +94,12 @@ testSaveUserSetAndDefaults = it "saves a file with user-set and default settings
 			actual `shouldBe` reference
 			removeFile "test.txt"
 		Left (x :: SomeException) -> assertBool (show x) False
+
+createBakBeforeSaving :: Spec
+createBakBeforeSaving = it "creates a backup of the config file before overwriting it" $ do
+	copyFile "tests/partial.config" "p.config"
+	saveSettings getDefaultSettings (Path "p.config") getDefaultSettings
+	doesFileExist "p.config.bak" >>= (flip shouldBe) True
+	doesFileExist "p.config" >>= (flip shouldBe) True
+	removeFile "p.config"
+	removeFile "p.config.bak"
