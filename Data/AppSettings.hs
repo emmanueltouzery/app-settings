@@ -1,5 +1,71 @@
 {-# LANGUAGE RankNTypes #-}
 
+-- |
+-- A library to deal with application settings.
+-- This library deals with read-write application settings.
+-- You will have to specify the settings that your application
+-- uses, their name, types and default values.
+-- Setting types must implement the 'Read' and 'Show' typeclasses. 
+--
+-- The settings are saved in a file in an INI-like key-value format
+-- (without sections).
+--
+-- Reading and updating settings is done in pure code, the IO
+-- monad is only used to load settings and save them to disk.
+-- It is advised for the user to create a module in your project
+-- holding settings handling.
+--
+-- You can then declare settings:
+--
+-- > fontSize :: Setting Double
+-- > fontSize = Setting "fontSize" 14
+-- > 
+-- > dateFormat :: Setting String
+-- > dateFormat = Setting "dateFormat" "%x"
+-- > 
+-- > backgroundColor :: Setting (Int, Int, Int)
+-- > backgroundColor = Setting "backcolor" (255, 0, 0)
+--
+-- Optionally you can declare the list of all your settings:
+--
+-- > defaultConfig :: DefaultConfig
+-- > defaultConfig = getDefaultConfig $ do
+-- >     setting fontSize
+-- >     setting dateFormat
+-- >     setting backgroundColor
+--
+-- If you do it, 'saveSettings' will also save settings
+-- which have not been modified, which are still at their
+-- default value in the configuration file, in a commented
+-- form, as a documentation to the user who may open the
+-- configuration file.
+-- So for instance if you declare this default configuration
+-- and have set the font size to 16 but left the other
+-- settings untouched, the configuration file which will be
+-- saved will be:
+--
+-- > fontSize=16
+-- > # dateFormat="%x"
+-- > # backcolor=(255,0,0)
+--
+-- If you did not specify the list of settings, only the
+-- first line would be present in the configuration file.
+--
+-- Once we declared the settings, we can read the configuration
+-- from disk (and your settings module should export your wrapper
+-- around the function offered by this library):
+--
+-- > readResult <- try $ readSettings (AutoFromAppName "test")
+-- > case readResult of
+-- > 	Right (conf, GetSetting getSetting) -> do
+-- > 		let textSize = getSetting textSizeFromWidth
+-- > 		saveSettings getDefaultConfig (AutoFromAppName "test") conf
+-- > 	Left (x :: SomeException) -> error "Error reading the config file!"
+--
+-- 'AutoFromAppName' specifies where to save the configuration file.
+-- And we've already covered the getSetting in this snippet, see 
+-- the 'readSettings' documentation for further information.
+
 module Data.AppSettings (
 	Conf,
 	DefaultConfig,
