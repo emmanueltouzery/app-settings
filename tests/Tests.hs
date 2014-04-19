@@ -31,6 +31,7 @@ main = hspec $ do
 		testFileWithComments
 		testInvalidFile
 		testInvalidValue
+		testNonExistingFile
 	describe "save config" $ do
 		testSaveUserSetAndDefaults
 		createBakBeforeSaving
@@ -74,6 +75,16 @@ testInvalidValue = it "parses correctly a file with invalid values" $ do
 			getSetting textSizeFromWidth `shouldBe` 0.04
 			getSetting textSizeFromHeight `shouldBe` 12.4
 			getSetting textFill `shouldBe` (1,2,3,4)
+		Left (x :: SomeException) -> assertBool (show x) False
+
+testNonExistingFile :: Spec
+testNonExistingFile = it "returns empty config for a non-existing file" $ do
+	readResult <- try $ readSettings (Path "tests/dontexist.conf")
+	case readResult of
+		Right (_, GetSetting getSetting) -> do
+			getSetting textSizeFromWidth `shouldBe` 0.04
+			getSetting textSizeFromHeight `shouldBe` 12.4
+			getSetting textFill `shouldBe` (1,1,0,1)
 		Left (x :: SomeException) -> assertBool (show x) False
 
 testInvalidFile :: Spec

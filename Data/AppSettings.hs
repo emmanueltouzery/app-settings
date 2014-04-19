@@ -56,7 +56,10 @@ getPathForLocation location = case location of
 readSettings :: FileLocation -> IO (Conf, GetSetting)
 readSettings location = do
 	filePath <- getPathForLocation location
-	conf <- readConfigFile filePath
+	exists <- doesFileExist filePath
+	conf <- if exists
+		then readConfigFile filePath
+		else return M.empty
 	return (conf, GetSetting $ getSetting' conf)
 
 saveSettings :: DefaultConfig -> FileLocation -> Conf -> IO ()
