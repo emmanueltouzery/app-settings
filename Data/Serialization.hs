@@ -22,6 +22,7 @@ data SettingInfo = SettingInfo { value :: String, userSet :: Bool } deriving (Sh
 -- | The in-memory configuration data.
 type Conf = M.Map String SettingInfo
 
+-- | The configuration file is in an invalid format.
 data ParseException = ParseException FilePath String
 	deriving (Show, Typeable)
 instance Exception ParseException

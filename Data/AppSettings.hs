@@ -29,26 +29,42 @@ newtype GetSetting = GetSetting (forall a. Read a => Setting a -> a)
 instance Show GetSetting where
 	show _ = "GetSetting"
 
+-- | The type of a setting.
+-- It contains the setting name
+-- (key in the configuration file) and its default value.
+--
+-- It is advised to have a module in your project handling settings.
+-- In this module, you'd have all the settings declared at the
+-- toplevel, and exported.
+-- The rest of the application can then do
+--
+-- @
+-- getSetting \<setting\>
+-- setSetting \<setting\> \<value\>
+-- @
+--
+-- and so on.
 data Setting a = Setting { name :: String, defaultValue :: a }
 
 -- | Information about the default configuration. Contains
--- all the settings (that you declare using getDefaultConfig)
+-- all the settings (that you declare using 'getDefaultConfig')
 -- and their default values. It is useful when you save a
--- configuration file, if you give this information to saveSettings,
+-- configuration file, if you give this information to 'saveSettings',
 -- it will save default options in the configuration file
 -- in a commented form, as a form of documentation to a user
 -- who would edit the configuration file.
 -- However this is completely optional, you can give
--- emptyDefaultConfig if you don't want this behaviour.
+-- 'emptyDefaultConfig' if you don't want this behaviour.
 newtype DefaultConfig = DefaultConfig Conf
 
 -- | Default configuration containing no options. It's fine
--- to give that to saveSettings if you don't want default
+-- to give that to 'saveSettings' if you don't want default
 -- settings being written to the configuration file in
 -- commented form (see 'DefaultConfig')
 emptyDefaultConfig :: DefaultConfig
 emptyDefaultConfig = DefaultConfig M.empty
 
+-- | see the 'getDefaultConfig' documentation.
 setting :: (Show a) => Setting a -> State Conf ()
 setting (Setting nameV defaultV) = do
 	soFar <- get
@@ -60,8 +76,8 @@ setting (Setting nameV defaultV) = do
 -- @
 -- defaultSettings :: DefaultConfig
 -- defaultSettings = getDefaultConfig $ do
---     setting <setting1>
---     setting <setting2>
+--     setting \<setting1\>
+--     setting \<setting2\>
 -- @
 getDefaultConfig :: State Conf () -> DefaultConfig
 getDefaultConfig actions = do
@@ -70,7 +86,7 @@ getDefaultConfig actions = do
 -- | Where to look for or store the configuration file.
 data FileLocation = AutoFromAppName String
 		    -- ^ Automatically build the location based on the
-		    -- application name. It will be ~/.<app name>/config.ini.
+		    -- application name. It will be ~\/.\<app name\>\/config.ini.
 		  | Path FilePath
 		    -- ^ Absolute path to a location on disk.
 
@@ -81,20 +97,22 @@ getPathForLocation location = case location of
 
 -- | Read settings from disk.
 -- Because it is doing file I/O it is smart to wrap the call
--- with a try, as I/O exceptions can be thrown.
+-- with a 'try', as I/O exceptions can be thrown.
 -- Also, the function will throw a 'ParseException' if the
 -- file is not properly formatted.
 -- NOTE that if the file is properly formatted in general,
--- but a value is stored in an invalid format (for instance "hello"
+-- but a value is stored in an invalid format (for instance \"hello\"
 -- for a Double), you will get no error and get the default value
 -- for that setting when you attempt to read it.
 --
--- This function also returns you a pair. The first element
+-- This function returns a pair. The first element
 -- is the configuration itself, which you can use to save
 -- back or modify the configuration.
 -- The second element is a function wrapped in the 'GetSetting'
 -- newtype. This function allows you to read a configuration
--- option simply by giving that option.
+-- option simply by giving that option (without that callback
+-- you'd have to call getSetting settings \<setting\>, so
+-- the callback lets you save a parameter).
 --
 -- Example of use:
 --
