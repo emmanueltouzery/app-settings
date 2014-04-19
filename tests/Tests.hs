@@ -37,7 +37,7 @@ main = hspec $ do
 
 testEmptyFileDefaults :: Spec
 testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/empty.config")
+	readResult <- try $ readSettings (Path "tests/empty.config")
 	case readResult of
 		Right (_, GetSetting getSetting) -> do
 			getSetting textSizeFromWidth `shouldBe` 0.04
@@ -47,7 +47,7 @@ testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
 
 testPartialFileDefaults :: Spec
 testPartialFileDefaults = it "parses correctly a partial file with defaults" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/partial.config")
+	readResult <- try $ readSettings (Path "tests/partial.config")
 	case readResult of
 		Right (_, GetSetting getSetting) -> do
 			getSetting textSizeFromWidth `shouldBe` 1.02
@@ -57,7 +57,7 @@ testPartialFileDefaults = it "parses correctly a partial file with defaults" $ d
 
 testFileWithComments :: Spec
 testFileWithComments = it "parses correctly a partial file with comments" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/test-save.txt")
+	readResult <- try $ readSettings (Path "tests/test-save.txt")
 	case readResult of
 		Right (_, GetSetting getSetting) -> do
 			getSetting textSizeFromWidth `shouldBe` 1.02
@@ -67,7 +67,7 @@ testFileWithComments = it "parses correctly a partial file with comments" $ do
 
 testInvalidValue :: Spec
 testInvalidValue = it "parses correctly a file with invalid values" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/brokenvalue.config")
+	readResult <- try $ readSettings (Path "tests/brokenvalue.config")
 	case readResult of
 		Right (_, GetSetting getSetting) -> do
 			-- give the default for the invalid value
@@ -78,17 +78,17 @@ testInvalidValue = it "parses correctly a file with invalid values" $ do
 
 testInvalidFile :: Spec
 testInvalidFile = it "reports errors properly for invalid files" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/broken.config")
+	readResult <- try $ readSettings (Path "tests/broken.config")
 	case readResult of
 		Left (x:: SomeException) -> assertBool "ok" True
 		Right _ -> assertBool "did not get an error!" False
 
 testSaveUserSetAndDefaults :: Spec
 testSaveUserSetAndDefaults = it "saves a file with user-set and default settings" $ do
-	readResult <- try $ readSettings getDefaultSettings (Path "tests/partial.config") 
+	readResult <- try $ readSettings (Path "tests/partial.config") 
 	case readResult of 
 		Right (conf, _) -> do
-			saveSettings (Path "test.txt") conf
+			saveSettings getDefaultSettings (Path "test.txt") conf
 			actual <- readFile "test.txt"
 			reference <- readFile "tests/test-save.txt"
 			actual `shouldBe` reference

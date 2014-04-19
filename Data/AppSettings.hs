@@ -30,9 +30,9 @@ instance Show GetSetting where
 data Setting a = Setting { name :: String, defaultValue :: a }
 
 setting :: (Show a) => Setting a -> State Conf ()
-setting (Setting name defaultV) = do
+setting (Setting nameV defaultV) = do
 	soFar <- get
-	put $ M.insert name (SettingInfo { value = show defaultV, userSet = False }) soFar
+	put $ M.insert nameV (SettingInfo { value = show defaultV, userSet = False }) soFar
 
 getDefaultConfig :: State Conf () -> Conf
 getDefaultConfig actions = do
@@ -50,17 +50,20 @@ getPathForLocation location = case location of
 -- but a value is stored in an invalid format (for instance "hello"
 -- for a Double), you will get no error and get the default value
 -- for that setting when you attempt to read it.
-readSettings :: Conf -> FileLocation -> IO (Conf, GetSetting)
-readSettings defaults location = do
+readSettings :: FileLocation -> IO (Conf, GetSetting)
+readSettings location = do
 	filePath <- getPathForLocation location
 	conf <- readConfigFile filePath
-	return (M.union conf defaults, GetSetting $ getSetting' conf)
+	return (conf, GetSetting $ getSetting' conf)
 
-saveSettings :: FileLocation -> Conf -> IO ()
-saveSettings location conf = do
+saveSettings :: Conf -> FileLocation -> Conf -> IO ()
+saveSettings defaults location conf = do
 	filePath <- getPathForLocation location
-	writeConfigFile filePath conf
+	writeConfigFile filePath (M.union conf defaults)
 
+-- TODO maybe another getSetting that'll tell you
+-- if the setting is invalid in the config file instead of silently
+-- give you the default?
 getSetting' :: (Read a) => Conf -> Setting a -> a
 getSetting' conf (Setting key defaultV) = fromMaybe defaultV $ getSettingValueFromConf conf key
 
