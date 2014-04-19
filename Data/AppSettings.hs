@@ -15,6 +15,8 @@ module Data.AppSettings (
 import System.Directory
 import qualified Data.Map as M
 import Control.Monad.State
+import Text.Read (readMaybe)
+import Data.Maybe (fromMaybe)
 
 import Data.Serialization
 
@@ -44,6 +46,10 @@ getPathForLocation location = case location of
 	AutoFromAppName appName -> getConfigFileName appName
 	Path path -> return path
 
+-- NOTE that if the file is properly formatted in general,
+-- but a value is stored in an invalid format (for instance "hello"
+-- for a Double), you will get no error and get the default value
+-- for that setting when you attempt to read it.
 readSettings :: Conf -> FileLocation -> IO (Conf, GetSetting)
 readSettings defaults location = do
 	filePath <- getPathForLocation location
@@ -56,7 +62,12 @@ saveSettings location conf = do
 	writeConfigFile filePath conf
 
 getSetting' :: (Read a) => Conf -> Setting a -> a
-getSetting' conf (Setting key defaultV) = maybe defaultV (read . value) (M.lookup key conf)
+getSetting' conf (Setting key defaultV) = fromMaybe defaultV $ getSettingValueFromConf conf key
+
+getSettingValueFromConf :: Read a => Conf -> String -> Maybe a
+getSettingValueFromConf conf key = do
+	asString <- M.lookup key conf
+	readMaybe $ value asString
 
 setSetting :: (Show a) => Conf -> Setting a -> a -> Conf
 setSetting conf (Setting key _) v = M.insert key (SettingInfo { value = show v, userSet=True }) conf

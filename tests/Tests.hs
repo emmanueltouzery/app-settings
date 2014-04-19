@@ -30,6 +30,7 @@ main = hspec $ do
 		testPartialFileDefaults
 		testFileWithComments
 		testInvalidFile
+		testInvalidValue
 	describe "save config" $ do
 		testSaveUserSetAndDefaults
 	-- readSetting for which i have no value
@@ -60,6 +61,17 @@ testFileWithComments = it "parses correctly a partial file with comments" $ do
 	case readResult of
 		Right (_, GetSetting getSetting) -> do
 			getSetting textSizeFromWidth `shouldBe` 1.02
+			getSetting textSizeFromHeight `shouldBe` 12.4
+			getSetting textFill `shouldBe` (1,2,3,4)
+		Left (x :: SomeException) -> assertBool (show x) False
+
+testInvalidValue :: Spec
+testInvalidValue = it "parses correctly a file with invalid values" $ do
+	readResult <- try $ readSettings getDefaultSettings (Path "tests/brokenvalue.config")
+	case readResult of
+		Right (_, GetSetting getSetting) -> do
+			-- give the default for the invalid value
+			getSetting textSizeFromWidth `shouldBe` 0.04
 			getSetting textSizeFromHeight `shouldBe` 12.4
 			getSetting textFill `shouldBe` (1,2,3,4)
 		Left (x :: SomeException) -> assertBool (show x) False
