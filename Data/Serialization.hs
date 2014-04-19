@@ -1,6 +1,11 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-module Data.Serialization (Conf, SettingInfo(..), readConfigFile, writeConfigFile) where
+module Data.Serialization (
+	Conf,
+	SettingInfo(..),
+	readConfigFile,
+	writeConfigFile,
+	ParseException) where
 
 import System.IO
 import qualified Data.Text.IO as T
@@ -14,6 +19,7 @@ import System.Directory (doesFileExist, copyFile)
 
 data SettingInfo = SettingInfo { value :: String, userSet :: Bool } deriving (Show, Eq)
 
+-- | The in-memory configuration data.
 type Conf = M.Map String SettingInfo
 
 data ParseException = ParseException FilePath String
