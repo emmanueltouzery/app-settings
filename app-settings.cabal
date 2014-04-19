@@ -18,7 +18,7 @@ cabal-version:       >=1.10
 
 library
   exposed-modules:     Data.AppSettings
-  -- other-modules:       
+  other-modules:       Data.Serialization
   -- other-extensions:    
   build-depends:       base >=4.6 && <4.7,
                        mtl == 2.1.*,
