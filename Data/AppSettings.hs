@@ -2,6 +2,7 @@
 
 module Data.AppSettings (
 	Conf,
+	DefaultConfig,
 	Setting(..),
 	GetSetting(..),
 	setting,
@@ -29,14 +30,16 @@ instance Show GetSetting where
 
 data Setting a = Setting { name :: String, defaultValue :: a }
 
+newtype DefaultConfig = DefaultConfig { defaultConfig :: Conf }
+
 setting :: (Show a) => Setting a -> State Conf ()
 setting (Setting nameV defaultV) = do
 	soFar <- get
 	put $ M.insert nameV (SettingInfo { value = show defaultV, userSet = False }) soFar
 
-getDefaultConfig :: State Conf () -> Conf
+getDefaultConfig :: State Conf () -> DefaultConfig
 getDefaultConfig actions = do
-	execState actions M.empty
+	DefaultConfig $ execState actions M.empty
 
 data FileLocation = AutoFromAppName String
 	| Path FilePath
@@ -56,8 +59,8 @@ readSettings location = do
 	conf <- readConfigFile filePath
 	return (conf, GetSetting $ getSetting' conf)
 
-saveSettings :: Conf -> FileLocation -> Conf -> IO ()
-saveSettings defaults location conf = do
+saveSettings :: DefaultConfig -> FileLocation -> Conf -> IO ()
+saveSettings (DefaultConfig defaults) location conf = do
 	filePath <- getPathForLocation location
 	writeConfigFile filePath (M.union conf defaults)
 

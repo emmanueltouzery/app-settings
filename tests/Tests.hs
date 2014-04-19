@@ -17,7 +17,7 @@ textFill = Setting "textFill" (1, 1, 0, 1)
 textSizeFromHeight :: Setting Double
 textSizeFromHeight = Setting "textSizeFromHeight" 12.4
 
-getDefaultSettings :: Conf
+getDefaultSettings :: DefaultConfig
 getDefaultSettings = getDefaultConfig $ do
 	setting textSizeFromWidth
 	setting textSizeFromHeight
@@ -97,9 +97,13 @@ testSaveUserSetAndDefaults = it "saves a file with user-set and default settings
 
 createBakBeforeSaving :: Spec
 createBakBeforeSaving = it "creates a backup of the config file before overwriting it" $ do
-	copyFile "tests/partial.config" "p.config"
-	saveSettings getDefaultSettings (Path "p.config") getDefaultSettings
-	doesFileExist "p.config.bak" >>= (flip shouldBe) True
-	doesFileExist "p.config" >>= (flip shouldBe) True
-	removeFile "p.config"
-	removeFile "p.config.bak"
+	readResult <- try $ readSettings (Path "tests/partial.config") 
+	case readResult of 
+		Right (conf, _) -> do
+			copyFile "tests/partial.config" "p.config"
+			saveSettings getDefaultSettings (Path "p.config") conf
+			doesFileExist "p.config.bak" >>= (flip shouldBe) True
+			doesFileExist "p.config" >>= (flip shouldBe) True
+			removeFile "p.config"
+			removeFile "p.config.bak"
+		Left (x :: SomeException) -> assertBool (show x) False
