@@ -106,7 +106,7 @@ instance Show GetSetting where
 --
 -- @
 -- getSetting \<setting\>
--- setSetting \<setting\> \<value\>
+-- setSetting \<conf\> \<setting\> \<value\>
 -- @
 --
 -- and so on.
@@ -179,6 +179,9 @@ getPathForLocation location = case location of
 -- option simply by giving that option (without that callback
 -- you'd have to call getSetting settings \<setting\>, so
 -- the callback lets you save a parameter).
+-- There is no such shortcut for 'setSetting' though, as it's
+-- normally used less often and in other contexts, it is probably
+-- OK to have that extra parameter for the setSetting.
 --
 -- Example of use:
 --
