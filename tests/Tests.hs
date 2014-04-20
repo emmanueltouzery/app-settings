@@ -113,8 +113,8 @@ createBakBeforeSaving = it "creates a backup of the config file before overwriti
 		Right (conf, _) -> do
 			copyFile "tests/partial.config" "p.config"
 			saveSettings defaultConfig (Path "p.config") conf
-			doesFileExist "p.config.bak" >>= (flip shouldBe) True
-			doesFileExist "p.config" >>= (flip shouldBe) True
+			doesFileExist "p.config.bak" >>= flip shouldBe True
+			doesFileExist "p.config" >>= flip shouldBe True
 			removeFile "p.config"
 			removeFile "p.config.bak"
 		Left (x :: SomeException) -> assertBool (show x) False

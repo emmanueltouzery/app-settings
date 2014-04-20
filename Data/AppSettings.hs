@@ -134,7 +134,7 @@ emptyDefaultConfig = DefaultConfig M.empty
 setting :: (Show a) => Setting a -> State Conf ()
 setting (Setting nameV defaultV) = do
 	soFar <- get
-	put $ M.insert nameV (SettingInfo { value = show defaultV, userSet = False }) soFar
+	put $ M.insert nameV SettingInfo { value = show defaultV, userSet = False } soFar
 
 -- | Used in combination with 'setting' to register settings.
 -- Registering settings is optional, see 'DefaultConfig'.
@@ -146,8 +146,7 @@ setting (Setting nameV defaultV) = do
 --     setting \<setting2\>
 -- @
 getDefaultConfig :: State Conf () -> DefaultConfig
-getDefaultConfig actions = do
-	DefaultConfig $ execState actions M.empty
+getDefaultConfig actions = DefaultConfig $ execState actions M.empty
 
 -- | Where to look for or store the configuration file.
 data FileLocation = AutoFromAppName String
@@ -207,7 +206,7 @@ readSettings location = do
 saveSettings :: DefaultConfig -> FileLocation -> Conf -> IO ()
 saveSettings (DefaultConfig defaults) location conf = do
 	filePath <- getPathForLocation location
-	writeConfigFile filePath (M.union conf defaults)
+	writeConfigFile filePath (conf `M.union` defaults)
 
 -- TODO maybe another getSetting that'll tell you
 -- if the setting is invalid in the config file instead of silently
@@ -223,7 +222,7 @@ getSettingValueFromConf conf key = do
 -- | Change the value of a setting. You'll have to call
 -- 'saveSettings' so that the change is written to disk.
 setSetting :: (Show a) => Conf -> Setting a -> a -> Conf
-setSetting conf (Setting key _) v = M.insert key (SettingInfo { value = show v, userSet=True }) conf
+setSetting conf (Setting key _) v = M.insert key SettingInfo { value = show v, userSet=True } conf
 
 getSettingsFolder :: String -> IO FilePath
 getSettingsFolder appName = do
