@@ -87,7 +87,7 @@ library
   exposed-modules:     Data.AppSettings
   other-modules:       Data.Serialization
   -- other-extensions:    
-  build-depends:       base >=4.6 && <4.7,
+  build-depends:       base >=4.6 && <5,
                        mtl == 2.1.*,
                        containers == 0.5.*,
                        directory == 1.2.*,
