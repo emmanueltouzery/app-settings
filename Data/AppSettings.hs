@@ -1,72 +1,7 @@
-{-# LANGUAGE RankNTypes #-}
-
--- |
--- A library to deal with application settings.
--- This library deals with read-write application settings.
--- You will have to specify the settings that your application
--- uses, their name, types and default values.
--- Setting types must implement the 'Read' and 'Show' typeclasses. 
---
--- The settings are saved in a file in an INI-like key-value format
--- (without sections).
---
--- Reading and updating settings is done in pure code, the IO
--- monad is only used to load settings and save them to disk.
--- It is advised for the user to create a module in your project
--- holding settings handling.
---
--- You can then declare settings:
---
--- > fontSize :: Setting Double
--- > fontSize = Setting "fontSize" 14
--- > 
--- > dateFormat :: Setting String
--- > dateFormat = Setting "dateFormat" "%x"
--- > 
--- > backgroundColor :: Setting (Int, Int, Int)
--- > backgroundColor = Setting "backcolor" (255, 0, 0)
---
--- Optionally you can declare the list of all your settings:
---
--- > defaultConfig :: DefaultConfig
--- > defaultConfig = getDefaultConfig $ do
--- >     setting fontSize
--- >     setting dateFormat
--- >     setting backgroundColor
---
--- If you do it, 'saveSettings' will also save settings
--- which have not been modified, which are still at their
--- default value in the configuration file, in a commented
--- form, as a documentation to the user who may open the
--- configuration file.
--- So for instance if you declare this default configuration
--- and have set the font size to 16 but left the other
--- settings untouched, the configuration file which will be
--- saved will be:
---
--- > fontSize=16
--- > # dateFormat="%x"
--- > # backcolor=(255,0,0)
---
--- If you did not specify the list of settings, only the
--- first line would be present in the configuration file.
---
--- Once we declared the settings, we can read the configuration
--- from disk (and your settings module should export your wrapper
--- around the function offered by this library):
---
--- > readResult <- try $ readSettings (AutoFromAppName "test")
--- > case readResult of
--- > 	Right (conf, GetSetting getSetting) -> do
--- > 		let textSize = getSetting textSizeFromWidth
--- > 		saveSettings getDefaultConfig (AutoFromAppName "test") conf
--- > 	Left (x :: SomeException) -> error "Error reading the config file!"
---
--- 'AutoFromAppName' specifies where to save the configuration file.
--- And we've already covered the getSetting in this snippet, see 
--- the 'readSettings' documentation for further information.
+{-# LANGUAGE RankNTypes, GADTs #-}
 
 module Data.AppSettings (
+	-- $intro
 	Conf,
 	DefaultConfig,
 	Setting(..),
@@ -83,10 +18,9 @@ module Data.AppSettings (
 import System.Directory
 import qualified Data.Map as M
 import Control.Monad.State
-import Text.Read (readMaybe)
-import Data.Maybe (fromMaybe)
 
 import Data.Serialization
+import Data.AppSettingsInternal
 
 -- http://stackoverflow.com/questions/23117205/
 newtype GetSetting = GetSetting (forall a. Read a => Setting a -> a)
@@ -94,23 +28,6 @@ newtype GetSetting = GetSetting (forall a. Read a => Setting a -> a)
 -- for the tests...
 instance Show GetSetting where
 	show _ = "GetSetting"
-
--- | The type of a setting.
--- It contains the setting name
--- (key in the configuration file) and its default value.
---
--- It is advised to have a module in your project handling settings.
--- In this module, you'd have all the settings declared at the
--- toplevel, and exported.
--- The rest of the application can then do
---
--- @
--- getSetting \<setting\>
--- setSetting \<conf\> \<setting\> \<value\>
--- @
---
--- and so on.
-data Setting a = Setting { name :: String, defaultValue :: a }
 
 -- | Information about the default configuration. Contains
 -- all the settings (that you declare using 'getDefaultConfig')
@@ -132,9 +49,8 @@ emptyDefaultConfig = DefaultConfig M.empty
 
 -- | see the 'getDefaultConfig' documentation.
 setting :: (Show a) => Setting a -> State Conf ()
-setting (Setting nameV defaultV) = do
-	soFar <- get
-	put $ M.insert nameV SettingInfo { value = show defaultV, userSet = False } soFar
+setting (Setting nameV defaultV) = get >>= put . M.insert nameV SettingInfo { value = show defaultV, userSet = False }
+setting (ListSetting nameV defaultV) = get >>= put . addListSettings False nameV defaultV 1
 
 -- | Used in combination with 'setting' to register settings.
 -- Registering settings is optional, see 'DefaultConfig'.
@@ -208,21 +124,24 @@ saveSettings (DefaultConfig defaults) location conf = do
 	filePath <- getPathForLocation location
 	writeConfigFile filePath (conf `M.union` defaults)
 
--- TODO maybe another getSetting that'll tell you
--- if the setting is invalid in the config file instead of silently
--- give you the default?
-getSetting' :: (Read a) => Conf -> Setting a -> a
-getSetting' conf (Setting key defaultV) = fromMaybe defaultV $ getSettingValueFromConf conf key
-
-getSettingValueFromConf :: Read a => Conf -> String -> Maybe a
-getSettingValueFromConf conf key = do
-	asString <- M.lookup key conf
-	readMaybe $ value asString
-
 -- | Change the value of a setting. You'll have to call
 -- 'saveSettings' so that the change is written to disk.
 setSetting :: (Show a) => Conf -> Setting a -> a -> Conf
 setSetting conf (Setting key _) v = M.insert key SettingInfo { value = show v, userSet=True } conf
+-- an empty list for the XX list key is written as XX= in the config file.
+setSetting conf (ListSetting key _) [] = M.insert key SettingInfo { value = "", userSet= True}
+	$ cleanListSetting key conf
+setSetting conf (ListSetting key _) elts = addListSettings True key elts 1
+	$ cleanListSetting key conf
+
+addListSettings :: Show b => Bool -> String -> [b] -> Int -> Conf -> Conf
+addListSettings _ _ [] _ = id
+addListSettings uset key (x:xs) index = M.insert keyForIndex SettingInfo { value = show x, userSet=uset }
+		. addListSettings uset key xs (index+1)
+	where keyForIndex = key ++ "_" ++ show index
+
+cleanListSetting :: String -> Conf -> Conf
+cleanListSetting key = M.filterWithKey (\k _ -> not $ isKeyForListSetting key k)
 
 getSettingsFolder :: String -> IO FilePath
 getSettingsFolder appName = do
@@ -233,3 +152,94 @@ getSettingsFolder appName = do
 
 getConfigFileName :: String -> IO String
 getConfigFileName appName = fmap (++"config.ini") $ getSettingsFolder appName
+
+-- $intro
+--
+-- A library to deal with application settings.
+-- This library deals with read-write application settings.
+-- You will have to specify the settings that your application
+-- uses, their name, types and default values.
+-- Setting types must implement the 'Read' and 'Show' typeclasses. 
+--
+-- The settings are saved in a file in an INI-like key-value format
+-- (without sections).
+--
+-- Reading and updating settings is done in pure code, the IO
+-- monad is only used to load settings and save them to disk.
+-- It is advised for the user to create a module in your project
+-- holding settings handling.
+--
+-- You can then declare settings:
+--
+-- > fontSize :: Setting Double
+-- > fontSize = Setting "fontSize" 14
+-- > 
+-- > dateFormat :: Setting String
+-- > dateFormat = Setting "dateFormat" "%x"
+-- > 
+-- > backgroundColor :: Setting (Int, Int, Int)
+-- > backgroundColor = Setting "backcolor" (255, 0, 0)
+--
+-- Optionally you can declare the list of all your settings:
+--
+-- > defaultConfig :: DefaultConfig
+-- > defaultConfig = getDefaultConfig $ do
+-- >     setting fontSize
+-- >     setting dateFormat
+-- >     setting backgroundColor
+--
+-- If you do it, 'saveSettings' will also save settings
+-- which have not been modified, which are still at their
+-- default value in the configuration file, in a commented
+-- form, as a documentation to the user who may open the
+-- configuration file.
+-- So for instance if you declare this default configuration
+-- and have set the font size to 16 but left the other
+-- settings untouched, the configuration file which will be
+-- saved will be:
+--
+-- > fontSize=16
+-- > # dateFormat="%x"
+-- > # backcolor=(255,0,0)
+--
+-- If you did not specify the list of settings, only the
+-- first line would be present in the configuration file.
+--
+--  With an ordinary setting, one row in the configuration file
+--  means one setting. That setting may of course be a list
+--  for instance. This setup works very well for shorter lists
+--  like [1,2,3], however if you have a list of more complex
+--  items, you will get very long lines and a configuration
+--  file very difficult to edit by hand.
+--  For these special cases there is also the 'ListSetting'
+--
+--  constructor:
+--
+--  > testList :: Setting [String]
+--  > testList = ListSetting "testList" ["list1", "list2", "list3"]
+--
+--  Now the configuration file looks like that:
+--
+--  > testList_1="list1"
+--  > testList_2="list2"
+--  > testList_3="list3"
+--
+--  Which is much more handy for big lists. An empty list is represented
+--  like so:
+--
+--  > testList=
+--
+-- Once we declared the settings, we can read the configuration
+-- from disk (and your settings module should export your wrapper
+-- around the function offered by this library):
+--
+-- > readResult <- try $ readSettings (AutoFromAppName "test")
+-- > case readResult of
+-- > 	Right (conf, GetSetting getSetting) -> do
+-- > 		let textSize = getSetting textSizeFromWidth
+-- > 		saveSettings getDefaultConfig (AutoFromAppName "test") conf
+-- > 	Left (x :: SomeException) -> error "Error reading the config file!"
+--
+-- 'AutoFromAppName' specifies where to save the configuration file.
+-- And we've already covered the getSetting in this snippet, see 
+-- the 'readSettings' documentation for further information.
