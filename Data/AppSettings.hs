@@ -13,7 +13,8 @@ module Data.AppSettings (
 	readSettings,
 	ParseException,
 	saveSettings,
-	setSetting) where
+	setSetting,
+	getSetting') where
 
 import System.Directory
 import qualified Data.Map as M

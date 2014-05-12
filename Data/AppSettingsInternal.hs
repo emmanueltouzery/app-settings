@@ -67,8 +67,10 @@ isKeyForListSetting settingKey key = (settingKey ++ "_") `isPrefixOf` key
 -- if the setting is invalid in the config file instead of silently
 -- give you the default?
 
--- | More low-level, please use the second function you get from 'readSettings',
--- wrapped in a 'GetSetting' newtype.
+-- | Most of the time you can use the second function you get from 'readSettings',
+-- wrapped in a 'GetSetting' newtype, however sometimes it's nicer to just pass
+-- a single 'Conf' to other functions if you're going to read or
+-- write to the configuration. The GetSetting lets you only read.
 getSetting' :: (Read a) => Conf -> Setting a -> a
 getSetting' conf (Setting key defaultV) = fromMaybe defaultV $ getSettingValueFromConf conf key
 getSetting' conf (ListSetting key defaultV) = case getSettingValueFromConf conf $ key ++ "_1" of
