@@ -99,7 +99,7 @@ library
                        Data.AppSettingsInternal
   -- other-extensions:    
   build-depends:       base >=4.6 && <5,
-                       mtl == 2.1.*,
+                       mtl >= 2.1 && <2.3,
                        containers == 0.5.*,
                        directory == 1.2.*,
                        text >= 0.10,
@@ -114,9 +114,9 @@ test-suite             tests
   main-is: Tests.hs
   default-language:    Haskell2010
   build-depends:       base,
-                       hspec >= 1.8 && <1.9,
+                       hspec >= 1.8 && <1.10,
                        HUnit >= 1.2 && <1.3,
-                       mtl == 2.1.*,
+                       mtl >= 2.1 && <2.3,
                        containers == 0.5.*,
                        directory == 1.2.*,
                        text >= 0.10,
