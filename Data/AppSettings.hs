@@ -3,7 +3,7 @@
 module Data.AppSettings (
 	-- $intro
 	Conf,
-	DefaultConfig,
+	DefaultConfig(..),
 	Setting(..),
 	GetSetting(..),
 	setting,
