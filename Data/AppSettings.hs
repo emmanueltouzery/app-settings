@@ -19,6 +19,7 @@ module Data.AppSettings (
 import System.Directory
 import qualified Data.Map as M
 import Control.Monad.State
+import Control.Applicative
 
 import Data.Serialization
 import Data.AppSettingsInternal
@@ -152,7 +153,7 @@ getSettingsFolder appName = do
 	return result
 
 getConfigFileName :: String -> IO String
-getConfigFileName appName = fmap (++"config.ini") $ getSettingsFolder appName
+getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 
 -- $intro
 --

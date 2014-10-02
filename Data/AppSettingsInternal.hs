@@ -60,7 +60,7 @@ data Setting a where
 
 isKeyForListSetting :: String -> String -> Bool
 isKeyForListSetting settingKey key = (settingKey ++ "_") `isPrefixOf` key
-	&& (all isDigit $ drop (length settingKey+1) key)
+	&& all isDigit (drop (length settingKey+1) key)
 
 
 -- TODO maybe another getSetting that'll tell you

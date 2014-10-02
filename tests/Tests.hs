@@ -34,8 +34,7 @@ defaultConfig = getDefaultConfig $ do
 
 main :: IO ()
 main = hspec $ do
-	describe "unit tests" $ do
-		testIsKeyForListSetting
+	describe "unit tests" testIsKeyForListSetting
 	describe "load config" $ do
 		testEmptyFileDefaults
 		testPartialFileDefaults
@@ -47,8 +46,7 @@ main = hspec $ do
 	describe "save config" $ do
 		testSaveUserSetAndDefaults
 		createBakBeforeSaving
-	describe "set setting" $ do
-		testSetListSetting
+	describe "set setting" testSetListSetting
 
 testEmptyFileDefaults :: Spec
 testEmptyFileDefaults = it "parses correctly an empty file with defaults" $ do
