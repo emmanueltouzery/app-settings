@@ -43,25 +43,31 @@ isConfigEntry _ = False
 
 parseConfigFile :: T.GenParser st Conf
 parseConfigFile = do
-	elements <- many $ parseComment <|> parseConfigEntry
+	elements <- many $ comment <|> configEntry <|> emptyLine
 	let configEntries = filter isConfigEntry elements
 	return $ M.fromList $ map (\(ConfigEntry a b) ->
 		(a, SettingInfo {value=b, userSet=True})) configEntries
 
-parseComment :: T.GenParser st ConfigElement
-parseComment = do
+comment :: T.GenParser st ConfigElement
+comment = do
 	char '#'
 	many $ noneOf "\r\n"
-	many $ oneOf "\r\n"
+	many1 $ oneOf "\r\n"
 	return Comment
 
-parseConfigEntry :: T.GenParser st ConfigElement
-parseConfigEntry = do
-	key <- many $ noneOf "=\r\n"
+configEntry :: T.GenParser st ConfigElement
+configEntry = do
+	key <- many1 $ noneOf " \t=\r\n"
 	char '='
 	val <- many $ noneOf "\r\n"
-	many $ oneOf "\r\n"
+	many1 $ oneOf "\r\n"
 	return $ ConfigEntry key val
+
+emptyLine :: T.GenParser st ConfigElement
+emptyLine = do
+	many $ oneOf " \t"
+	many1 $ oneOf "\r\n"
+	return Comment
 
 writeConfigFile :: FilePath -> Conf -> IO ()
 writeConfigFile path config = do
