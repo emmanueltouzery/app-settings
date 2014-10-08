@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 name:                app-settings
-version:             0.2.0.2
+version:             0.2.0.3
 synopsis:            A library to manage application settings (INI file-like)
 description:         
   A library to deal with application settings.
