@@ -75,7 +75,7 @@ description:
   > case readResult of
   > 	Right (conf, GetSetting getSetting) -> do
   > 		let textSize = getSetting textSizeFromWidth
-  > 		saveSettings getDefaultConfig (AutoFromAppName "test") conf
+  > 		saveSettings emptyDefaultConfig (AutoFromAppName "test") conf
   > 	Left (x :: SomeException) -> error "Error reading the config file!"
   .
   'AutoFromAppName' specifies where to save the configuration file.

@@ -107,7 +107,7 @@ getPathForLocation location = case location of
 -- case readResult of
 -- 	Right (conf, GetSetting getSetting) -> do
 -- 		let textSize = getSetting textSizeFromWidth
--- 		saveSettings getDefaultConfig (Path \"my.config\") conf
+-- 		saveSettings emptyDefaultConfig (Path \"my.config\") conf
 -- 	Left (x :: SomeException) -> error \"Error reading the config file!\"
 -- @
 readSettings :: FileLocation -> IO (Conf, GetSetting)
@@ -239,7 +239,7 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 -- > case readResult of
 -- > 	Right (conf, GetSetting getSetting) -> do
 -- > 		let textSize = getSetting textSizeFromWidth
--- > 		saveSettings getDefaultConfig (AutoFromAppName "test") conf
+-- > 		saveSettings emptyDefaultConfig (AutoFromAppName "test") conf
 -- > 	Left (x :: SomeException) -> error "Error reading the config file!"
 --
 -- 'AutoFromAppName' specifies where to save the configuration file.
