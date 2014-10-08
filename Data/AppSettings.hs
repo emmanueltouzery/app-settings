@@ -106,7 +106,7 @@ getPathForLocation location = case location of
 -- readResult <- try $ readSettings (Path \"my.config\")
 -- case readResult of
 -- 	Right (conf, GetSetting getSetting) -> do
--- 		let textSize = getSetting textSizeFromWidth
+-- 		let textSize = getSetting fontSize
 -- 		saveSettings emptyDefaultConfig (Path \"my.config\") conf
 -- 	Left (x :: SomeException) -> error \"Error reading the config file!\"
 -- @
@@ -238,10 +238,12 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 -- > readResult <- try $ readSettings (AutoFromAppName "test")
 -- > case readResult of
 -- > 	Right (conf, GetSetting getSetting) -> do
--- > 		let textSize = getSetting textSizeFromWidth
+-- > 		let textSize = getSetting fontSize
 -- > 		saveSettings emptyDefaultConfig (AutoFromAppName "test") conf
 -- > 	Left (x :: SomeException) -> error "Error reading the config file!"
 --
 -- 'AutoFromAppName' specifies where to save the configuration file.
 -- And we've already covered the getSetting in this snippet, see 
 -- the 'readSettings' documentation for further information.
+-- 
+-- You can also look at the tests of the library on the github project for sample use.
