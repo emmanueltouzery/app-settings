@@ -31,7 +31,8 @@ readConfigFile :: FilePath -> IO Conf
 readConfigFile path = do
 	contents <- T.readFile path
 	case parse parseConfigFile "" contents of
-		Left _ -> throwIO $ ParseException path "Invalid configuration file"
+		Left pe -> throwIO (ParseException path
+			$ "Invalid configuration file " ++ show (errorPos pe))
 		Right v -> return v
 
 data ConfigElement = ConfigEntry String String
