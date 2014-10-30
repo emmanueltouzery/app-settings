@@ -16,6 +16,7 @@ import Control.Monad (unless, when)
 import Control.Exception (throwIO, Exception)
 import Data.Typeable (Typeable)
 import System.Directory (doesFileExist, copyFile)
+import Control.Applicative ((<$>))
 
 data SettingInfo = SettingInfo { value :: String, userSet :: Bool } deriving (Show, Eq)
 
@@ -50,19 +51,41 @@ parseConfigFile = do
 		(a, SettingInfo {value=b, userSet=True})) configEntries
 
 comment :: T.GenParser st ConfigElement
-comment = do
-	char '#'
-	many $ noneOf "\r\n"
-	many1 $ oneOf "\r\n"
-	return Comment
+comment = char '#' >> finishLine >> return Comment
 
 configEntry :: T.GenParser st ConfigElement
 configEntry = do
 	key <- many1 $ noneOf " \t=\r\n"
 	char '='
-	val <- many $ noneOf "\r\n"
+	val <- finishLine
+	-- so now we finished the parsing of the classical
+	-- key=value, however we support a little bit more,
+	-- you can do something like that:
+	-- key=[1,2,
+	--      3,4,
+	--      5, 6]
+	--  In that case the value will be
+	--  "[1,2,3,4,5, 6]"
+	blanks <- many $ oneOf " \t"
+	fullVal <- if null blanks
+		then return val
+		else do
+			firstExtraLine <- finishLine
+			rest <- concat <$> many (lineSkipSpaces $ length blanks)
+			return $ val ++ firstExtraLine ++ rest
+	return $ ConfigEntry key fullVal
+
+finishLine :: T.GenParser st String
+finishLine = do
+	result <- many $ noneOf "\r\n"
 	many1 $ oneOf "\r\n"
-	return $ ConfigEntry key val
+	return result
+
+lineSkipSpaces :: Int -> T.GenParser st String
+lineSkipSpaces spaceCount = do
+	count spaceCount (oneOf "\t ")
+	result <- finishLine
+	return result
 
 emptyLine :: T.GenParser st ConfigElement
 emptyLine = do

@@ -231,6 +231,16 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 --
 --  > testList=
 --
+--  There is also another technique that you can use if you have too long
+--  lines: you can put line breaks in the setting values if you start the
+--  following lines with spaces, like so:
+--
+--  testList=["list1",
+--    "list2", "list3"]
+--
+--   In that case don't use the ListSetting option. Also keep the leading
+--   spaces consistent in the continuing lines.
+--
 -- Once we declared the settings, we can read the configuration
 -- from disk (and your settings module should export your wrapper
 -- around the function offered by this library):
