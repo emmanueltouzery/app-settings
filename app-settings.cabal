@@ -75,7 +75,8 @@ description:
   >   "list2", "list3"]
   .
   In that case don't use the ListSetting option. Also keep the leading
-  spaces consistent in the continuing lines.
+  spaces consistent in the continuing lines. Note that the library will
+  automatically wrap setting values longer than 80 characters when saving.
   .
   Once we declared the settings, we can read the configuration
   from disk (and your settings module should export your wrapper

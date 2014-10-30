@@ -105,4 +105,10 @@ writeConfigFile path config = do
 writeConfigEntry :: Handle -> String -> SettingInfo -> IO ()
 writeConfigEntry handle key (SettingInfo sValue sUserSet) = do
 	unless sUserSet $ hPutStr handle "# "
-	hPutStrLn handle $ key ++ "=" ++ sValue
+	hPutStrLn handle $ key ++ "=" ++ (wrap sValue)
+
+wrap :: String -> String
+wrap str = if null rest
+		then str
+		else first ++ "\n  " ++ wrap rest
+	where (first, rest) = splitAt 80 str
