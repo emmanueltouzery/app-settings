@@ -17,6 +17,7 @@ import Control.Exception (throwIO, Exception)
 import Data.Typeable (Typeable)
 import System.Directory (doesFileExist, copyFile)
 import Control.Applicative ((<$>))
+import Data.Maybe
 
 data SettingInfo = SettingInfo { value :: String, userSet :: Bool } deriving (Show, Eq)
 
@@ -62,16 +63,18 @@ configEntry = do
 	-- key=value, however we support a little bit more,
 	-- you can do something like that:
 	-- key=[1,2,
-	--      3,4,
-	--      5, 6]
-	--  In that case the value will be
+	--  3,4,
+	--  5, 6]
+	-- In that case the value will be
 	--  "[1,2,3,4,5, 6]"
-	blanks <- many $ oneOf " \t"
-	fullVal <- if null blanks
+	--  => we can continue a setting on the next
+	--  line if that lines starts with a leading space.
+	blank <- optionMaybe $ string " "
+	fullVal <- if isNothing blank
 		then return val
 		else do
 			firstExtraLine <- finishLine
-			rest <- concat <$> many (lineSkipSpaces $ length blanks)
+			rest <- concat <$> many (string " " >> finishLine)
 			return $ val ++ firstExtraLine ++ rest
 	return $ ConfigEntry key fullVal
 
@@ -81,15 +84,8 @@ finishLine = do
 	many1 $ oneOf "\r\n"
 	return result
 
-lineSkipSpaces :: Int -> T.GenParser st String
-lineSkipSpaces spaceCount = do
-	count spaceCount (oneOf "\t ")
-	result <- finishLine
-	return result
-
 emptyLine :: T.GenParser st ConfigElement
 emptyLine = do
-	many $ oneOf " \t"
 	many1 $ oneOf "\r\n"
 	return Comment
 
@@ -110,5 +106,5 @@ writeConfigEntry handle key (SettingInfo sValue sUserSet) = do
 wrap :: String -> String
 wrap str = if null rest
 		then str
-		else first ++ "\n  " ++ wrap rest
+		else first ++ "\n " ++ wrap rest
 	where (first, rest) = splitAt 80 str

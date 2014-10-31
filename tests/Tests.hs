@@ -128,7 +128,7 @@ testReadLongSetting = it "Reads setting files with setting values wrapped over s
 	readResult <- try $ readSettings (Path "tests/longsetting.conf") 
 	case readResult of 
 		Right (_, GetSetting getVal) -> do
-			let expected = replicate 20 "longstring"
+			let expected = replicate 20 "long      string"
 			let actual = getVal testInlineList
 			assertEqual "doesn't match" expected actual
 		Left (x :: SomeException) -> assertBool (show x) False
@@ -170,7 +170,7 @@ wrapLongSettings = it "wraps long settings when saving" $ do
 	readResult <- try $ readSettings (Path "tests/partial.config") 
 	case readResult of 
 		Right (conf, _) -> do
-			let conf1 = setSetting conf testInlineList $ replicate 20 "longstring"
+			let conf1 = setSetting conf testInlineList $ replicate 20 "long      string"
 			saveSettings defaultConfig (Path "xx.config") conf1
 			expected <- readFile "tests/longsetting.conf"
 			actual <- readFile "xx.config"
