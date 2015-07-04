@@ -1,20 +1,20 @@
 {-# LANGUAGE RankNTypes, GADTs #-}
 
 module Data.AppSettings (
-	-- $intro
-	Conf,
-	DefaultConfig(..),
-	Setting(..),
-	GetSetting(..),
-	setting,
-	getDefaultConfig,
-	emptyDefaultConfig,
-	FileLocation(..),
-	readSettings,
-	ParseException,
-	saveSettings,
-	setSetting,
-	getSetting') where
+    -- $intro
+    Conf,
+    DefaultConfig(..),
+    Setting(..),
+    GetSetting(..),
+    setting,
+    getDefaultConfig,
+    emptyDefaultConfig,
+    FileLocation(..),
+    readSettings,
+    ParseException,
+    saveSettings,
+    setSetting,
+    getSetting') where
 
 import System.Directory
 import qualified Data.Map as M
@@ -29,7 +29,7 @@ newtype GetSetting = GetSetting (forall a. Read a => Setting a -> a)
 
 -- for the tests...
 instance Show GetSetting where
-	show _ = "GetSetting"
+    show _ = "GetSetting"
 
 -- | Information about the default configuration. Contains
 -- all the settings (that you declare using 'getDefaultConfig')
@@ -68,15 +68,15 @@ getDefaultConfig actions = DefaultConfig $ execState actions M.empty
 
 -- | Where to look for or store the configuration file.
 data FileLocation = AutoFromAppName String
-		    -- ^ Automatically build the location based on the
-		    -- application name. It will be ~\/.\<app name\>\/config.ini.
-		  | Path FilePath
-		    -- ^ Absolute path to a location on disk.
+            -- ^ Automatically build the location based on the
+            -- application name. It will be ~\/.\<app name\>\/config.ini.
+          | Path FilePath
+            -- ^ Absolute path to a location on disk.
 
 getPathForLocation :: FileLocation -> IO FilePath
 getPathForLocation location = case location of
-	AutoFromAppName appName -> getConfigFileName appName
-	Path path -> return path
+    AutoFromAppName appName -> getConfigFileName appName
+    Path path -> return path
 
 -- | Read settings from disk.
 -- Because it is doing file I/O it is smart to wrap the call
@@ -105,26 +105,26 @@ getPathForLocation location = case location of
 -- @
 -- readResult <- try $ readSettings (Path \"my.config\")
 -- case readResult of
--- 	Right (conf, GetSetting getSetting) -> do
--- 		let textSize = getSetting fontSize
--- 		saveSettings emptyDefaultConfig (Path \"my.config\") conf
--- 	Left (x :: SomeException) -> error \"Error reading the config file!\"
+--  Right (conf, GetSetting getSetting) -> do
+--      let textSize = getSetting fontSize
+--      saveSettings emptyDefaultConfig (Path \"my.config\") conf
+--  Left (x :: SomeException) -> error \"Error reading the config file!\"
 -- @
 readSettings :: FileLocation -> IO (Conf, GetSetting)
 readSettings location = do
-	filePath <- getPathForLocation location
-	exists <- doesFileExist filePath
-	conf <- if exists
-		then readConfigFile filePath
-		else return M.empty
-	return (conf, GetSetting $ getSetting' conf)
+    filePath <- getPathForLocation location
+    exists <- doesFileExist filePath
+    conf <- if exists
+        then readConfigFile filePath
+        else return M.empty
+    return (conf, GetSetting $ getSetting' conf)
 
 -- | It is advised to run the save within a try call
 -- because it does disk I/O, otherwise the call is straightforward.
 saveSettings :: DefaultConfig -> FileLocation -> Conf -> IO ()
 saveSettings (DefaultConfig defaults) location conf = do
-	filePath <- getPathForLocation location
-	writeConfigFile filePath (conf `M.union` defaults)
+    filePath <- getPathForLocation location
+    writeConfigFile filePath (conf `M.union` defaults)
 
 -- | Change the value of a setting. You'll have to call
 -- 'saveSettings' so that the change is written to disk.
@@ -132,25 +132,25 @@ setSetting :: (Show a) => Conf -> Setting a -> a -> Conf
 setSetting conf (Setting key _) v = M.insert key SettingInfo { value = show v, userSet=True } conf
 -- an empty list for the XX list key is written as XX= in the config file.
 setSetting conf (ListSetting key _) [] = M.insert key SettingInfo { value = "", userSet= True}
-	$ cleanListSetting key conf
+    $ cleanListSetting key conf
 setSetting conf (ListSetting key _) elts = addListSettings True key elts 1
-	$ cleanListSetting key conf
+    $ cleanListSetting key conf
 
 addListSettings :: Show b => Bool -> String -> [b] -> Int -> Conf -> Conf
 addListSettings _ _ [] _ = id
 addListSettings uset key (x:xs) index = M.insert keyForIndex SettingInfo { value = show x, userSet=uset }
-		. addListSettings uset key xs (index+1)
-	where keyForIndex = key ++ "_" ++ show index
+        . addListSettings uset key xs (index+1)
+    where keyForIndex = key ++ "_" ++ show index
 
 cleanListSetting :: String -> Conf -> Conf
 cleanListSetting key = M.filterWithKey (\k _ -> not $ isKeyForListSetting key k)
 
 getSettingsFolder :: String -> IO FilePath
 getSettingsFolder appName = do
-	home <- getHomeDirectory
-	let result = home ++ "/." ++ appName ++ "/"
-	createDirectoryIfMissing False result
-	return result
+    home <- getHomeDirectory
+    let result = home ++ "/." ++ appName ++ "/"
+    createDirectoryIfMissing False result
+    return result
 
 getConfigFileName :: String -> IO String
 getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
@@ -161,7 +161,7 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 -- This library deals with read-write application settings.
 -- You will have to specify the settings that your application
 -- uses, their name, types and default values.
--- Setting types must implement the 'Read' and 'Show' typeclasses. 
+-- Setting types must implement the 'Read' and 'Show' typeclasses.
 --
 -- The settings are saved in a file in an INI-like key-value format
 -- (without sections).
@@ -175,10 +175,10 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 --
 -- > fontSize :: Setting Double
 -- > fontSize = Setting "fontSize" 14
--- > 
+-- >
 -- > dateFormat :: Setting String
 -- > dateFormat = Setting "dateFormat" "%x"
--- > 
+-- >
 -- > backgroundColor :: Setting (Int, Int, Int)
 -- > backgroundColor = Setting "backcolor" (255, 0, 0)
 --
@@ -249,13 +249,13 @@ getConfigFileName appName = (++"config.ini") <$> getSettingsFolder appName
 --
 -- > readResult <- try $ readSettings (AutoFromAppName "test")
 -- > case readResult of
--- > 	Right (conf, GetSetting getSetting) -> do
--- > 		let textSize = getSetting fontSize
--- > 		saveSettings emptyDefaultConfig (AutoFromAppName "test") conf
--- > 	Left (x :: SomeException) -> error "Error reading the config file!"
+-- >    Right (conf, GetSetting getSetting) -> do
+-- >        let textSize = getSetting fontSize
+-- >        saveSettings emptyDefaultConfig (AutoFromAppName "test") conf
+-- >    Left (x :: SomeException) -> error "Error reading the config file!"
 --
 -- 'AutoFromAppName' specifies where to save the configuration file.
--- And we've already covered the getSetting in this snippet, see 
+-- And we've already covered the getSetting in this snippet, see
 -- the 'readSettings' documentation for further information.
--- 
+--
 -- You can also look at the tests of the library on the github project for sample use.

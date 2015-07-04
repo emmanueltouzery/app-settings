@@ -54,13 +54,13 @@ import Data.Serialization
 --
 -- > testList=
 data Setting a where
-	Setting :: String -> a -> Setting a
+    Setting :: String -> a -> Setting a
 
-	ListSetting :: (Read a, Show a) => String -> [a] -> Setting [a]
+    ListSetting :: (Read a, Show a) => String -> [a] -> Setting [a]
 
 isKeyForListSetting :: String -> String -> Bool
 isKeyForListSetting settingKey key = (settingKey ++ "_") `isPrefixOf` key
-	&& all isDigit (drop (length settingKey+1) key)
+    && all isDigit (drop (length settingKey+1) key)
 
 
 -- TODO maybe another getSetting that'll tell you
@@ -74,19 +74,19 @@ isKeyForListSetting settingKey key = (settingKey ++ "_") `isPrefixOf` key
 getSetting' :: (Read a) => Conf -> Setting a -> a
 getSetting' conf (Setting key defaultV) = fromMaybe defaultV $ getSettingValueFromConf conf key
 getSetting' conf (ListSetting key defaultV) = case getSettingValueFromConf conf $ key ++ "_1" of
-	-- an empty list for the XX list key is written as XX= in the config file.
-	Nothing -> case M.lookup key conf of
-		Nothing -> defaultV
-		_ -> []
-	Just x -> x : decodeListSetting conf key 2
+    -- an empty list for the XX list key is written as XX= in the config file.
+    Nothing -> case M.lookup key conf of
+        Nothing -> defaultV
+        _       -> []
+    Just x -> x : decodeListSetting conf key 2
 
 getSettingValueFromConf :: Read a => Conf -> String -> Maybe a
 getSettingValueFromConf conf key = do
-	asString <- M.lookup key conf
-	readMaybe $ value asString
+    asString <- M.lookup key conf
+    readMaybe $ value asString
 
 decodeListSetting  :: Read a => Conf -> String -> Int -> [a]
 decodeListSetting conf key index = case getSettingValueFromConf conf fullKey of
-		Nothing -> []
-		Just v -> v:decodeListSetting conf key (index+1)
-	where fullKey = key ++ "_" ++ show index
+        Nothing -> []
+        Just v  -> v:decodeListSetting conf key (index+1)
+    where fullKey = key ++ "_" ++ show index
