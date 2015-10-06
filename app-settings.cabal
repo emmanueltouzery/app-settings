@@ -104,7 +104,7 @@ maintainer:          etouzery@gmail.com
 -- copyright:           
 category:            Configuration
 build-type:          Simple
--- extra-source-files:  
+extra-source-files:  tests/*.conf tests/*.config tests/*.txt
 cabal-version:       >=1.10
 
 library
