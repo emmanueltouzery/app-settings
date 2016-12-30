@@ -115,7 +115,7 @@ library
   build-depends:       base >=4.6 && <5,
                        mtl >= 2.1 && <2.3,
                        containers == 0.5.*,
-                       directory == 1.2.*,
+                       directory >= 1.2 && < 1.4,
                        text >= 0.10,
                        parsec == 3.1.*
   -- hs-source-dirs:
@@ -132,7 +132,7 @@ test-suite             tests
                        HUnit >= 1.2 && <1.6,
                        mtl >= 2.1 && <2.3,
                        containers == 0.5.*,
-                       directory == 1.2.*,
+                       directory >= 1.2 && < 1.4,
                        text >= 0.10,
                        parsec == 3.1.*
   Ghc-Options:         -Wall
